@@ -76,15 +76,23 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         self.model = Gio.ListStore()
 
         self.cv = Gtk.ColumnView()
-        tree_model = Gtk.TreeListModel.new(self.model, False, True, self.model_func)
+
+        self.row_filter = Gtk.CustomFilter()
+        self.row_filter.set_filter_func(self.filter)
+        tree_model_filter = Gtk.FilterListModel(model=self.model)
+        tree_model_filter.set_filter(self.row_filter)
+
+        tree_model = Gtk.TreeListModel.new(tree_model_filter, False, True, self.model_func)
         tree_sorter = Gtk.TreeListRowSorter.new(self.cv.get_sorter())
+
+        self.entry = Gtk.Entry(margin_start=6, margin_end=6, margin_top=6, margin_bottom=6)
+        self.entry.connect("activate", self.filter_rows)
+
         sorter_model = Gtk.SortListModel(model=tree_model, sorter=tree_sorter)
         selection = Gtk.SingleSelection.new(model=sorter_model)
         self.cv.set_model(selection)
 
-        #sorter_model = Gtk.SortListModel(model=self.model, sorter=self.cv.get_sorter())
-        #self.cv.set_model(Gtk.NoSelection(model=sorter_model))
-
+        # list store -> filter -> tree list model -> sorter_model -> single selection -> column view
         for n in nodes.keys():
             self.model.append(Country(country_id=n, country_name=nodes[n][0], country_capital=nodes[n][1]))
 
@@ -115,7 +123,9 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         self.cv.props.vexpand = True
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, valign=Gtk.Align.FILL)
-        box.append(Adw.HeaderBar())
+        box.append(Adw.HeaderBar(css_classes=["flat"]))
+
+        box.append(self.entry)
         scroll = Gtk.ScrolledWindow(vexpand=True)
         scroll.set_child(self.cv)
         box.append(scroll)
@@ -129,6 +139,21 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         self.set_default_size(1000, 700)
         self.set_content(box)
 
+    def filter_rows(self, entry):
+        self.row_filter.changed(Gtk.FilterChange.DIFFERENT)
+        # for item in self.model:
+        #     self.row_filter.match(item)
+        #     print(item)
+        #     print(self.row_filter.match(item))
+        # self.entry.set_text("")
+
+    def filter(self, data):
+        text = self.entry.get_text()
+        if text == "":
+            return 1
+        if text in data.country_name:
+            return 1
+        return 0
 
     def model_func(self, arg):
         pass
