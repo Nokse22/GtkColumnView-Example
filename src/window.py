@@ -99,14 +99,10 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_factory_setup)
         factory.connect("bind", self._on_factory_bind, "country_name")
-        factory.connect("unbind", self._on_factory_unbind, "country_name")
-        factory.connect("teardown", self._on_factory_teardown)
 
         factory2 = Gtk.SignalListItemFactory()
         factory2.connect("setup", self._on_factory_setup)
         factory2.connect("bind", self._on_factory_bind, "country_capital")
-        factory2.connect("unbind", self._on_factory_unbind, "country_capital")
-        factory2.connect("teardown", self._on_factory_teardown)
 
         col1 = Gtk.ColumnViewColumn(title="Country", factory=factory)
         col1.props.expand = True
@@ -130,28 +126,17 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         scroll.set_child(self.cv)
         box.append(scroll)
 
-        # col2_string_sorter = Gtk.StringSorter()
-        # expression = Gtk.Expression()
-        # expression.watch(self.model, None, "item")
-        # col2_string_sorter.set_expression(expression)
-        # col2.set_sorter(col2_string_sorter)
-
         self.set_default_size(1000, 700)
         self.set_content(box)
 
     def filter_rows(self, entry):
         self.row_filter.changed(Gtk.FilterChange.DIFFERENT)
-        # for item in self.model:
-        #     self.row_filter.match(item)
-        #     print(item)
-        #     print(self.row_filter.match(item))
-        # self.entry.set_text("")
 
     def filter(self, data):
         text = self.entry.get_text()
         if text == "":
             return 1
-        if text in data.country_name:
+        if text.lower() in data.country_name.lower():
             return 1
         return 0
 
@@ -160,9 +145,9 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
 
     def sort_func(self, obj_1, obj_2, data):
         if data == "country_name":
-            if obj_1.country_name < obj_2.country_name:
+            if obj_1.country_name.lower() < obj_2.country_name.lower():
                 return -1
-            elif obj_1.country_name == obj_2.country_name:
+            elif obj_1.country_name.lower() == obj_2.country_name.lower():
                 return 0
             return 1
         return 0
@@ -183,10 +168,6 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
             cell._binding.unbind()
             cell._binding = None
 
-    def _on_factory_teardown(self, factory, list_item):
-        cell = list_item.get_child()
-        cell._binding = None
-
     def _on_selected_item_notify(self, dropdown, _):
         country = dropdown.get_selected_item()
         print(f"Selected item: {country}")
@@ -200,16 +181,6 @@ class GtkcolumnviewExampleWindow(Adw.ApplicationWindow):
         cell = list_item.get_child()
         country = list_item.get_item().get_item()
         cell._binding = country.bind_property(what, cell, "text", GObject.BindingFlags.SYNC_CREATE)
-
-    def _on_factory_unbind(self, factory, list_item, what):
-        cell = list_item.get_child()
-        if cell._binding:
-            cell._binding.unbind()
-            cell._binding = None
-
-    def _on_factory_teardown(self, factory, list_item):
-        cell = list_item.get_child()
-        cell._binding = None
 
     def _on_selected_item_notify(self, dropdown, _):
         country = dropdown.get_selected_item()
